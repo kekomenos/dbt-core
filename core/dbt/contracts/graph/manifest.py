@@ -1677,9 +1677,9 @@ class MacroManifest(MacroMethods):
         self.macros = macros
         self.metadata = ManifestMetadata(
             user_id=tracking.active_user.id if tracking.active_user else None,
-            send_anonymous_usage_stats=get_flags().SEND_ANONYMOUS_USAGE_STATS
-            if tracking.active_user
-            else None,
+            send_anonymous_usage_stats=(
+                get_flags().SEND_ANONYMOUS_USAGE_STATS if tracking.active_user else None
+            ),
         )
         # This is returned by the 'graph' context property
         # in the ProviderContext class.
