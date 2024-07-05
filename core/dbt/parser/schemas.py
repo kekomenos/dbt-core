@@ -906,7 +906,7 @@ class ModelPatchParser(NodePatchParser[UnparsedModelUpdate]):
         self.patch_constraints(node, patch.constraints)
         node.build_contract_checksum()
 
-    def patch_constraints(self, node, constraints):
+    def patch_constraints(self, node, constraints: List[Dict[str, Any]]):
         contract_config = node.config.get("contract")
         if contract_config.enforced is True:
             self._validate_constraint_prerequisites(node)

@@ -35,6 +35,7 @@ from dbt.flags import get_flags
 from dbt.graph import Graph
 from dbt.node_types import ModelLanguage, NodeType
 from dbt_common.clients.system import make_directory
+from dbt_common.contracts.constraints import ConstraintType
 from dbt_common.events.contextvars import get_node_info
 from dbt_common.events.format import pluralize
 from dbt_common.events.functions import fire_event
@@ -437,7 +438,40 @@ class Compiler:
             relation_name = str(relation_cls.create_from(self.config, node))
             node.relation_name = relation_name
 
+        # Compile 'ref' and 'source' expressions in foreign key constraints
+        if node.resource_type == NodeType.Model:
+            # column-level foreign key constraints
+            for column in node.columns.values():
+                for column_constraint in column.constraints:
+                    if (
+                        column_constraint.type == ConstraintType.foreign_key
+                        and column_constraint.to
+                    ):
+                        column_constraint.to = (
+                            self._compile_relation_for_foreign_key_constraint_to(
+                                manifest, node, column_constraint.to
+                            )
+                        )
+
+            # model-level foreign key constraints
+            for model_constraint in node.constraints:
+                if model_constraint.type == ConstraintType.foreign_key and model_constraint.to:
+                    model_constraint.to = self._compile_relation_for_foreign_key_constraint_to(
+                        manifest, node, model_constraint.to
+                    )
+
         return node
+
+    def _compile_relation_for_foreign_key_constraint_to(
+        self, manifest: Manifest, node: ManifestSQLNode, to_expression: str
+    ) -> str:
+        foreign_key_node = manifest.find_node_from_ref_or_source(to_expression)
+        if not foreign_key_node:
+            raise GraphDependencyNotFoundError(node, to_expression)
+        adapter = get_adapter(self.config)
+        relation_cls = adapter.Relation
+        relation_name = str(relation_cls.create_from(self.config, foreign_key_node))
+        return relation_name
 
     # This method doesn't actually "compile" any of the nodes. That is done by the
     # "compile_node" method. This creates a Linker and builds the networkx graph,

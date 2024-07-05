@@ -1,11 +1,13 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import jinja2
 
-from dbt.exceptions import MacroNamespaceNotStringError
+from dbt.artifacts.resources import RefArgs
+from dbt.exceptions import MacroNamespaceNotStringError, ParsingError
 from dbt_common.clients.jinja import get_environment
 from dbt_common.exceptions.macros import MacroNameNotStringError
 from dbt_common.tests import test_caching_enabled
+from dbt_extractor import ExtractionError, py_extract_from_source  # type: ignore
 
 _TESTING_MACRO_CACHE: Optional[Dict[str, Any]] = {}
 
@@ -153,3 +155,56 @@ def statically_parse_adapter_dispatch(func_call, ctx, db_wrapper):
             possible_macro_calls.append(f"{package_name}.{func_name}")
 
     return possible_macro_calls
+
+
+def statically_parse_ref(input: str) -> RefArgs:
+    """
+    Returns a RefArgs object corresponding to an input jinja expression.
+
+    input: str representing how input node is referenced in tested model sql
+        * examples:
+        - "ref('my_model_a')"
+        - "ref('my_model_a', version=3)"
+        - "ref('package', 'my_model_a', version=3)"
+
+    If input is not a well-formed jinja expression, TODO is raised.
+    If input is not a valid ref expression, TODO is raised.
+    """
+    try:
+        statically_parsed = py_extract_from_source(f"{{{{ {input} }}}}")
+    except ExtractionError:
+        # TODO: more precise error
+        raise ParsingError(f"Invalid jinja expression: {input}.")
+
+    if not statically_parsed["refs"]:
+        # TODO: more precise error class
+        raise ParsingError("not a ref")
+
+    ref = list(statically_parsed["refs"])[0]
+    return RefArgs(package=ref.get("package"), name=ref.get("name"), version=ref.get("version"))
+
+
+def statically_parse_source(input: str) -> Tuple[str, str]:
+    """
+    Returns a RefArgs object corresponding to an input jinja expression.
+
+    input: str representing how input node is referenced in tested model sql
+        * examples:
+        - "source('my_source_schema', 'my_source_name')"
+
+    If input is not a well-formed jinja expression, TODO is raised.
+    If input is not a valid source expression, TODO is raised.
+    """
+    try:
+        statically_parsed = py_extract_from_source(f"{{{{ {input} }}}}")
+    except ExtractionError:
+        # TODO: more precise error
+        raise ParsingError(f"Invalid jinja expression: {input}.")
+
+    if not statically_parsed["sources"]:
+        # TODO: more precise error class
+        raise ParsingError("not a ref")
+
+    source = list(statically_parsed["sources"])[0]
+    source_name, source_table_name = source
+    return source_name, source_table_name
