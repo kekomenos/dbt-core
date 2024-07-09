@@ -81,15 +81,15 @@ unit_tests:
 
 UNIT_TEST_NULL_ROWS_SORT = """
 unit_tests:
-    - name: test_my_model_null_handling
-      model: my_model
-      description: "unit test description"
-      given: []
-      expect:
+  - name: test_my_model_null_handling
+    model: my_model
+    description: "unit test description"
+    given: []
+    expect:
         rows:
-          - {"id":  , "col1": "d"}
-          - {"id":  , "col1": "e"}
-          - {"id": 6, "col1": "f"}
+        - {"id":  , "col1": "d"}
+        - {"id":  , "col1": "e"}
+        - {"id": 6, "col1": "f"}
 """
 
 
@@ -204,7 +204,7 @@ class UnitTestParserTest(SchemaParserTest):
             unique_id="unit_test.snowplow.my_model.test_my_model_null_handling",
             given=[],
             expect=UnitTestOutputFixture(
-                rows=[{"col1": "f", "id": 6}, {"col1": "d", "id": None}, {"col1": "e", "id": None}]
+                rows=[{"id": 6, "col1": "f"}, {"id": None, "col1": "d"}, {"id": None, "col1": "e"}]
             ),
             description="unit test description",
             overrides=None,
