@@ -79,6 +79,19 @@ unit_tests:
           - {a: 1}
 """
 
+UNIT_TEST_NULL_ROWS_SORT = """
+unit_tests:
+    - name: test_my_model_null_handling
+      model: my_model
+      description: "unit test description"
+      given: []
+      expect:
+        rows:
+          - {"id":  , "col1": "d"}
+          - {"id":  , "col1": "e"}
+          - {"id": 6, "col1": "f"}
+"""
+
 
 class UnitTestParserTest(SchemaParserTest):
     def setUp(self):
@@ -173,3 +186,32 @@ class UnitTestParserTest(SchemaParserTest):
         for unit_test in self.parser.manifest.unit_tests.values():
             self.assertEqual(len(unit_test.depends_on.nodes), 1)
             self.assertEqual(unit_test.depends_on.nodes[0], "model.snowplow.my_model")
+
+    def test_float_null_values_down(self):
+        block = self.yaml_block_for(UNIT_TEST_NULL_ROWS_SORT, "test_my_model.yml")
+
+        UnitTestParser(self.parser, block).parse()
+
+        self.assert_has_manifest_lengths(self.parser.manifest, nodes=1, unit_tests=1)
+        unit_test = list(self.parser.manifest.unit_tests.values())[0]
+        expected = UnitTestDefinition(
+            name="test_my_model_null_handling",
+            model="my_model",
+            resource_type=NodeType.Unit,
+            package_name="snowplow",
+            path=block.path.relative_path,
+            original_file_path=block.path.original_file_path,
+            unique_id="unit_test.snowplow.my_model.test_my_model_null_handling",
+            given=[],
+            expect=UnitTestOutputFixture(
+                rows=[{"col1": "f", "id": 6}, {"col1": "d", "id": None}, {"col1": "e", "id": None}]
+            ),
+            description="unit test description",
+            overrides=None,
+            depends_on=DependsOn(nodes=["model.snowplow.my_model"]),
+            fqn=["snowplow", "my_model", "test_my_model_null_handling"],
+            config=UnitTestConfig(),
+            schema="test_schema",
+        )
+        expected.build_unit_test_checksum()
+        assertEqualNodes(unit_test, expected)
