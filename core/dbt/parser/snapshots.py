@@ -62,7 +62,8 @@ class SnapshotParser(SQLParser[SnapshotNode]):
 
     def transform(self, node: SnapshotNode) -> SnapshotNode:
         try:
-            self.set_snapshot_attributes(node)
+            # This may not be necessary now, comment out
+            # self.set_snapshot_attributes(node)
             return node
         except ValidationError as exc:
             raise SnapshopConfigError(exc, node)

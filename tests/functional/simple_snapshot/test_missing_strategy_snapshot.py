@@ -9,13 +9,11 @@ from tests.functional.simple_snapshot.fixtures import (
 )
 
 snapshots_invalid__snapshot_sql = """
-{# make sure to never name this anything with `target_schema` in the name, or the test will be invalid! #}
 {% snapshot snapshot_actual %}
-    {# missing the mandatory target_schema parameter #}
+    {# missing the mandatory strategy parameter #}
     {{
         config(
             unique_key='id || ' ~ "'-'" ~ ' || first_name',
-            strategy='timestamp',
             updated_at='updated_at',
         )
     }}
@@ -47,7 +45,4 @@ def test_missing_strategy(project):
     with pytest.raises(ValidationError) as exc:
         run_dbt(["compile"], expect_pass=False)
 
-    assert (
-        "Snapshots must be configured with a 'strategy', 'unique_key', and 'target_schema'"
-        in str(exc.value)
-    )
+    assert "Snapshots must be configured with a 'strategy' and 'unique_key'" in str(exc.value)

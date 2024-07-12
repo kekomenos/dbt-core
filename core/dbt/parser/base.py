@@ -290,6 +290,14 @@ class ConfiguredParser(
         self._update_node_schema(parsed_node, config_dict.get("schema"))
         self._update_node_alias(parsed_node, config_dict.get("alias"))
 
+        # Snapshot nodes use special "target_database" and "target_schema" fields
+        # for backward compatibility
+        if parsed_node.resource_type == NodeType.Snapshot:
+            if "target_database" in config_dict and config_dict["target_database"]:
+                parsed_node.database = config_dict["target_database"]
+            if "target_schema" in config_dict and config_dict["target_schema"]:
+                parsed_node.schema = config_dict["target_schema"]
+
         self._update_node_relation_name(parsed_node)
 
     def update_parsed_node_config(
@@ -438,9 +446,9 @@ class ConfiguredParser(
             fqn=fqn,
         )
         self.render_update(node, config)
-        result = self.transform(node)
-        self.add_result_node(block, result)
-        return result
+        # result = self.transform(node)
+        self.add_result_node(block, node)
+        return node
 
     def _update_node_relation_name(self, node: ManifestNode):
         # Seed and Snapshot nodes and Models that are not ephemeral,
