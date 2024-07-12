@@ -38,6 +38,7 @@ from dbt.artifacts.resources.v1.macro import Macro, MacroArgument, MacroDependsO
 from dbt.artifacts.resources.v1.metric import (
     ConstantPropertyInput,
     ConversionTypeParams,
+    CumulativeTypeParams,
     Metric,
     MetricConfig,
     MetricInput,

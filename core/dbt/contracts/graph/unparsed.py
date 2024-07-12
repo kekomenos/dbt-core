@@ -4,8 +4,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 
-from dbt_semantic_interfaces.type_enums import ConversionCalculationType
-
 # trigger the PathEncoder
 import dbt_common.helper_types  # noqa:F401
 from dbt import deprecations
@@ -39,6 +37,10 @@ from dbt_common.dataclass_schema import (
     dbtClassMixin,
 )
 from dbt_common.exceptions import DbtInternalError
+from dbt_semantic_interfaces.type_enums import (
+    ConversionCalculationType,
+    PeriodAggregation,
+)
 
 
 @dataclass
@@ -533,6 +535,13 @@ class UnparsedConversionTypeParams(dbtClassMixin):
 
 
 @dataclass
+class UnparsedCumulativeTypeParams(dbtClassMixin):
+    window: Optional[str] = None
+    grain_to_date: Optional[str] = None
+    period_agg: str = PeriodAggregation.FIRST.value
+
+
+@dataclass
 class UnparsedMetricTypeParams(dbtClassMixin):
     measure: Optional[Union[UnparsedMetricInputMeasure, str]] = None
     numerator: Optional[Union[UnparsedMetricInput, str]] = None
@@ -542,6 +551,7 @@ class UnparsedMetricTypeParams(dbtClassMixin):
     grain_to_date: Optional[str] = None  # str is really a TimeGranularity Enum
     metrics: Optional[List[Union[UnparsedMetricInput, str]]] = None
     conversion_type_params: Optional[UnparsedConversionTypeParams] = None
+    cumulative_type_params: Optional[UnparsedCumulativeTypeParams] = None
 
 
 @dataclass
