@@ -29,16 +29,22 @@ class SnapshotParser(SQLParser[SnapshotNode]):
         # `database` value of the node (ultimately sourced from the `database`
         # config value), and if that is not set, use the database defined in
         # the adapter's credentials.
+        changed = False
         if node.config.target_database:
             node.database = node.config.target_database
-        elif not node.database:
+            changed = True
+        elif not node.database:  # does this ever happen?
             node.database = self.root_project.credentials.database
+            changed = True
 
         # the target schema must be set if we got here, so overwrite the node's
         # schema
-        node.schema = node.config.target_schema
-        # We need to set relation_name again, since database/schema might have changed
-        self._update_node_relation_name(node)
+        if node.config.target_schema:
+            node.schema = node.config.target_schema
+            changed = True
+        if changed:
+            # We need to set relation_name again, since database/schema might have changed
+            self._update_node_relation_name(node)
 
         return node
 

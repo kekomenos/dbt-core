@@ -72,6 +72,7 @@ class Parser(BaseParser[FinalValue], Generic[FinalValue]):
 
 
 class RelationUpdate:
+    # "component" is database, schema or alias
     def __init__(self, config: RuntimeConfig, manifest: Manifest, component: str) -> None:
         default_macro = manifest.find_generate_macro_by_name(
             component=component,
@@ -127,6 +128,7 @@ class ConfiguredParser(
     ) -> None:
         super().__init__(project, manifest, root_project)
 
+        # this sets callables from RelationUpdate
         self._update_node_database = RelationUpdate(
             manifest=manifest, config=root_project, component="database"
         )
@@ -287,13 +289,6 @@ class ConfiguredParser(
         self._update_node_database(parsed_node, config_dict.get("database"))
         self._update_node_schema(parsed_node, config_dict.get("schema"))
         self._update_node_alias(parsed_node, config_dict.get("alias"))
-
-        # Snapshot nodes use special "target_database" and "target_schema" fields for some reason
-        if getattr(parsed_node, "resource_type", None) == NodeType.Snapshot:
-            if "target_database" in config_dict and config_dict["target_database"]:
-                parsed_node.database = config_dict["target_database"]
-            if "target_schema" in config_dict and config_dict["target_schema"]:
-                parsed_node.schema = config_dict["target_schema"]
 
         self._update_node_relation_name(parsed_node)
 
