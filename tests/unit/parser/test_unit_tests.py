@@ -1,8 +1,9 @@
 from unittest import mock
 
-from dbt.artifacts.resources import DependsOn, UnitTestConfig
+from dbt.artifacts.resources import DependsOn, UnitTestConfig, UnitTestFormat
 from dbt.contracts.graph.nodes import NodeType, UnitTestDefinition
 from dbt.contracts.graph.unparsed import UnitTestOutputFixture
+from dbt.exceptions import ParsingError
 from dbt.parser import SchemaParser
 from dbt.parser.unit_tests import UnitTestParser
 from tests.unit.parser.test_parser import SchemaParserTest, assertEqualNodes
@@ -79,7 +80,7 @@ unit_tests:
           - {a: 1}
 """
 
-UNIT_TEST_NULL_ROWS_SORT = """
+UNIT_TEST_NONE_ROWS_SORT = """
 unit_tests:
   - name: test_my_model_null_handling
     model: my_model
@@ -90,6 +91,33 @@ unit_tests:
         - {"id":  , "col1": "d"}
         - {"id":  , "col1": "e"}
         - {"id": 6, "col1": "f"}
+"""
+
+UNIT_TEST_NONE_ROWS_SORT_CSV = """
+unit_tests:
+  - name: test_my_model_null_handling
+    model: my_model
+    description: "unit test description"
+    given: []
+    expect:
+        format: csv
+        rows: |
+          id,col1
+          ,d
+          ,e
+          6,f
+"""
+
+UNIT_TEST_NONE_ROWS_SORT_FAILS = """
+unit_tests:
+  - name: test_my_model_null_handling
+    model: my_model
+    description: "this unit test needs one non-None value row"
+    given: []
+    expect:
+        rows:
+        - {"id":  , "col1": "d"}
+        - {"id":  , "col1": "e"}
 """
 
 
@@ -187,8 +215,10 @@ class UnitTestParserTest(SchemaParserTest):
             self.assertEqual(len(unit_test.depends_on.nodes), 1)
             self.assertEqual(unit_test.depends_on.nodes[0], "model.snowplow.my_model")
 
-    def test_float_null_values_down(self):
-        block = self.yaml_block_for(UNIT_TEST_NULL_ROWS_SORT, "test_my_model.yml")
+    def _parametrize_test_promote_non_none_row(
+        self, unit_test_fixture_yml, fixture_expected_field_format, id_field_type
+    ):
+        block = self.yaml_block_for(unit_test_fixture_yml, "test_my_model.yml")
 
         UnitTestParser(self.parser, block).parse()
 
@@ -204,7 +234,12 @@ class UnitTestParserTest(SchemaParserTest):
             unique_id="unit_test.snowplow.my_model.test_my_model_null_handling",
             given=[],
             expect=UnitTestOutputFixture(
-                rows=[{"id": 6, "col1": "f"}, {"id": None, "col1": "d"}, {"id": None, "col1": "e"}]
+                format=fixture_expected_field_format,
+                rows=[
+                    {"id": id_field_type(6), "col1": "f"},
+                    {"id": None, "col1": "e"},
+                    {"id": None, "col1": "d"},
+                ],
             ),
             description="unit test description",
             overrides=None,
@@ -215,3 +250,19 @@ class UnitTestParserTest(SchemaParserTest):
         )
         expected.build_unit_test_checksum()
         assertEqualNodes(unit_test, expected)
+
+    def test_expected_promote_non_none_row_dct(self):
+        self._parametrize_test_promote_non_none_row(
+            UNIT_TEST_NONE_ROWS_SORT, UnitTestFormat.Dict, int
+        )
+
+    def test_expected_promote_non_none_row_csv(self):
+        self._parametrize_test_promote_non_none_row(
+            UNIT_TEST_NONE_ROWS_SORT_CSV, UnitTestFormat.CSV, str
+        )
+
+    def test_no_full_row_throws_error(self):
+        with self.assertRaises(ParsingError):
+            block = self.yaml_block_for(UNIT_TEST_NONE_ROWS_SORT_FAILS, "test_my_model.yml")
+
+            UnitTestParser(self.parser, block).parse()
