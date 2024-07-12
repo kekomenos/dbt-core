@@ -108,6 +108,19 @@ unit_tests:
           6,f
 """
 
+UNIT_TEST_NONE_ROWS_SORT_SQL = """
+unit_tests:
+  - name: test_my_model_null_handling
+    model: my_model
+    description: "unit test description"
+    given: []
+    expect:
+        format: sql
+        rows: |
+          select null
+          select 1
+"""
+
 UNIT_TEST_NONE_ROWS_SORT_FAILS = """
 unit_tests:
   - name: test_my_model_null_handling
@@ -216,7 +229,7 @@ class UnitTestParserTest(SchemaParserTest):
             self.assertEqual(unit_test.depends_on.nodes[0], "model.snowplow.my_model")
 
     def _parametrize_test_promote_non_none_row(
-        self, unit_test_fixture_yml, fixture_expected_field_format, id_field_type
+        self, unit_test_fixture_yml, fixture_expected_field_format, expected_rows
     ):
         block = self.yaml_block_for(unit_test_fixture_yml, "test_my_model.yml")
 
@@ -233,14 +246,7 @@ class UnitTestParserTest(SchemaParserTest):
             original_file_path=block.path.original_file_path,
             unique_id="unit_test.snowplow.my_model.test_my_model_null_handling",
             given=[],
-            expect=UnitTestOutputFixture(
-                format=fixture_expected_field_format,
-                rows=[
-                    {"id": id_field_type(6), "col1": "f"},
-                    {"id": None, "col1": "e"},
-                    {"id": None, "col1": "d"},
-                ],
-            ),
+            expect=UnitTestOutputFixture(format=fixture_expected_field_format, rows=expected_rows),
             description="unit test description",
             overrides=None,
             depends_on=DependsOn(nodes=["model.snowplow.my_model"]),
@@ -252,13 +258,29 @@ class UnitTestParserTest(SchemaParserTest):
         assertEqualNodes(unit_test, expected)
 
     def test_expected_promote_non_none_row_dct(self):
+        expected_rows = [
+            {"id": 6, "col1": "f"},
+            {"id": None, "col1": "e"},
+            {"id": None, "col1": "d"},
+        ]
         self._parametrize_test_promote_non_none_row(
-            UNIT_TEST_NONE_ROWS_SORT, UnitTestFormat.Dict, int
+            UNIT_TEST_NONE_ROWS_SORT, UnitTestFormat.Dict, expected_rows
         )
 
     def test_expected_promote_non_none_row_csv(self):
+        expected_rows = [
+            {"id": "6", "col1": "f"},
+            {"id": None, "col1": "e"},
+            {"id": None, "col1": "d"},
+        ]
         self._parametrize_test_promote_non_none_row(
-            UNIT_TEST_NONE_ROWS_SORT_CSV, UnitTestFormat.CSV, str
+            UNIT_TEST_NONE_ROWS_SORT_CSV, UnitTestFormat.CSV, expected_rows
+        )
+
+    def test_expected_promote_non_none_row_sql(self):
+        expected_rows = "select null\n" + "select 1"
+        self._parametrize_test_promote_non_none_row(
+            UNIT_TEST_NONE_ROWS_SORT_SQL, UnitTestFormat.SQL, expected_rows
         )
 
     def test_no_full_row_throws_error(self):
