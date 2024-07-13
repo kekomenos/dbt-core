@@ -2,12 +2,10 @@ import os
 from typing import List
 
 from dbt.contracts.graph.nodes import SnapshotNode
-from dbt.exceptions import SnapshopConfigError
 from dbt.node_types import NodeType
 from dbt.parser.base import SQLParser
 from dbt.parser.search import BlockContents, BlockSearcher, FileBlock
 from dbt.utils import split_path
-from dbt_common.dataclass_schema import ValidationError
 
 
 class SnapshotParser(SQLParser[SnapshotNode]):
@@ -24,30 +22,6 @@ class SnapshotParser(SQLParser[SnapshotNode]):
     def get_compiled_path(cls, block: FileBlock):
         return block.path.relative_path
 
-    def set_snapshot_attributes(self, node):
-        # use the target_database setting if we got it, otherwise the
-        # `database` value of the node (ultimately sourced from the `database`
-        # config value), and if that is not set, use the database defined in
-        # the adapter's credentials.
-        changed = False
-        if node.config.target_database:
-            node.database = node.config.target_database
-            changed = True
-        elif not node.database:  # does this ever happen?
-            node.database = self.root_project.credentials.database
-            changed = True
-
-        # the target schema must be set if we got here, so overwrite the node's
-        # schema
-        if node.config.target_schema:
-            node.schema = node.config.target_schema
-            changed = True
-        if changed:
-            # We need to set relation_name again, since database/schema might have changed
-            self._update_node_relation_name(node)
-
-        return node
-
     def get_fqn(self, path: str, name: str) -> List[str]:
         """Get the FQN for the node. This impacts node selection and config
         application.
@@ -59,14 +33,6 @@ class SnapshotParser(SQLParser[SnapshotNode]):
         fqn.extend(split_path(no_ext))
         fqn.append(name)
         return fqn
-
-    def transform(self, node: SnapshotNode) -> SnapshotNode:
-        try:
-            # This may not be necessary now, comment out
-            # self.set_snapshot_attributes(node)
-            return node
-        except ValidationError as exc:
-            raise SnapshopConfigError(exc, node)
 
     def parse_file(self, file_block: FileBlock) -> None:
         blocks = BlockSearcher(

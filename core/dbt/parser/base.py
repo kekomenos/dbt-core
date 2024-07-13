@@ -448,7 +448,6 @@ class ConfiguredParser(
             fqn=fqn,
         )
         self.render_update(node, config)
-        # node = self.transform(node)
         self.add_result_node(block, node)
         return node
 
@@ -469,17 +468,12 @@ class ConfiguredParser(
     def parse_file(self, file_block: FileBlock) -> None:
         pass
 
-    @abc.abstractmethod
-    def transform(self, node: FinalNode) -> FinalNode:
-        pass
-
 
 class SimpleParser(
     ConfiguredParser[ConfiguredBlockType, FinalNode],
     Generic[ConfiguredBlockType, FinalNode],
 ):
-    def transform(self, node):
-        return node
+    pass
 
 
 class SQLParser(ConfiguredParser[FileBlock, FinalNode], Generic[FinalNode]):
@@ -488,5 +482,4 @@ class SQLParser(ConfiguredParser[FileBlock, FinalNode], Generic[FinalNode]):
 
 
 class SimpleSQLParser(SQLParser[FinalNode]):
-    def transform(self, node):
-        return node
+    pass
