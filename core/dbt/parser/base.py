@@ -446,7 +446,7 @@ class ConfiguredParser(
             fqn=fqn,
         )
         self.render_update(node, config)
-        # result = self.transform(node)
+        node = self.transform(node)
         self.add_result_node(block, node)
         return node
 
