@@ -292,7 +292,9 @@ class ConfiguredParser(
 
         # Snapshot nodes use special "target_database" and "target_schema" fields
         # for backward compatibility
-        if parsed_node.resource_type == NodeType.Snapshot:
+        # We have to do getattr here because saved_query parser calls this method with
+        # Export object instead of a node.
+        if getattr(parsed_node, "resource_type", None) == NodeType.Snapshot:
             if "target_database" in config_dict and config_dict["target_database"]:
                 parsed_node.database = config_dict["target_database"]
             if "target_schema" in config_dict and config_dict["target_schema"]:
@@ -446,7 +448,7 @@ class ConfiguredParser(
             fqn=fqn,
         )
         self.render_update(node, config)
-        node = self.transform(node)
+        # node = self.transform(node)
         self.add_result_node(block, node)
         return node
 
