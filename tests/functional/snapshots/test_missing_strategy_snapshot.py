@@ -2,7 +2,7 @@ import pytest
 
 from dbt.tests.util import run_dbt
 from dbt_common.dataclass_schema import ValidationError
-from tests.functional.simple_snapshot.fixtures import (
+from tests.functional.snapshots.fixtures import (
     macros__test_no_overlaps_sql,
     models__ref_snapshot_sql,
     models__schema_yml,

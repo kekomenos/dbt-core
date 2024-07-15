@@ -10,7 +10,7 @@ from dbt.tests.util import (
     run_dbt,
     write_file,
 )
-from tests.functional.simple_snapshot.fixtures import (
+from tests.functional.snapshots.fixtures import (
     macros__test_no_overlaps_sql,
     macros_custom_snapshot__custom_sql,
     models__ref_snapshot_sql,
