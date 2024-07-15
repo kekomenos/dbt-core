@@ -142,7 +142,7 @@ class TestBasicTargetSchemaConfig(Basic):
         return {
             "snapshots": {
                 "test": {
-                    "target_schema": unique_schema + "_alt",
+                    "schema": "alt",
                 }
             }
         }
@@ -153,6 +153,8 @@ class TestBasicTargetSchemaConfig(Basic):
         # ensure that the schema in the snapshot node is the same as target_schema
         snapshot_id = "snapshot.test.snapshot_actual"
         snapshot_node = manifest.nodes[snapshot_id]
+        # The schema field be changed by the default "generate_schema_name"
+        # to append an underscore plus the configured schema of "alt".
         assert snapshot_node.schema == f"{project.test_schema}_alt"
         assert (
             snapshot_node.relation_name
