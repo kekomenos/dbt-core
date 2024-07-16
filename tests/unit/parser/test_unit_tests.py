@@ -3,7 +3,6 @@ from unittest import mock
 from dbt.artifacts.resources import DependsOn, UnitTestConfig, UnitTestFormat
 from dbt.contracts.graph.nodes import NodeType, UnitTestDefinition
 from dbt.contracts.graph.unparsed import UnitTestOutputFixture
-from dbt.exceptions import ParsingError
 from dbt.parser import SchemaParser
 from dbt.parser.unit_tests import UnitTestParser
 from tests.unit.parser.test_parser import SchemaParserTest, assertEqualNodes
@@ -283,8 +282,6 @@ class UnitTestParserTest(SchemaParserTest):
             UNIT_TEST_NONE_ROWS_SORT_SQL, UnitTestFormat.SQL, expected_rows
         )
 
-    def test_no_full_row_throws_error(self):
-        with self.assertRaises(ParsingError):
-            block = self.yaml_block_for(UNIT_TEST_NONE_ROWS_SORT_FAILS, "test_my_model.yml")
-
-            UnitTestParser(self.parser, block).parse()
+    def test_no_full_row_does_not_raise_exception(self):
+        block = self.yaml_block_for(UNIT_TEST_NONE_ROWS_SORT_FAILS, "test_my_model.yml")
+        UnitTestParser(self.parser, block).parse()

@@ -35,6 +35,8 @@ from dbt.parser.schemas import (
     YamlReader,
 )
 from dbt.utils import get_pseudo_test_path
+from dbt_common.events.functions import fire_event
+from dbt_common.events.types import SystemStdErr
 from dbt_extractor import ExtractionError, py_extract_from_source  # type: ignore
 
 
@@ -416,8 +418,10 @@ class UnitTestParser(YamlReader):
                 break
 
         if non_none_row_index is None:
-            raise ParsingError(
-                "Unit Test fixtures require at least one row free of Nones to ensure consistent column types."
+            fire_event(
+                SystemStdErr(
+                    bmsg="Unit Test fixtures benefit from having at least one row free of Null values to ensure consistent column types. Failure to meet this recommendation can result in type mismatch errors between unit test source models and `expected` fixtures."
+                )
             )
         else:
             ut_fixture.rows[0], ut_fixture.rows[non_none_row_index] = (
