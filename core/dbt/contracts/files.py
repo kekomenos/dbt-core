@@ -194,6 +194,7 @@ class SchemaSourceFile(BaseSourceFile):
     metrics: List[str] = field(default_factory=list)
     # metrics generated from semantic_model measures
     generated_metrics: List[str] = field(default_factory=list)
+    metrics_from_measures: Dict[str, Any] = field(default_factory=dict)
     groups: List[str] = field(default_factory=list)
     # node patches contain models, seeds, snapshots, analyses
     ndp: List[str] = field(default_factory=list)
@@ -258,6 +259,28 @@ class SchemaSourceFile(BaseSourceFile):
             if name in self.data_tests[yaml_key]:
                 return self.data_tests[yaml_key][name]
         return []
+
+    def add_metrics_from_measures(self, semantic_model_name: str, metric_unique_id: str):
+        if self.generated_metrics:
+            self.fix_metrics_from_measures()
+        if semantic_model_name not in self.metrics_from_measures:
+            self.metrics_from_measures[semantic_model_name] = []
+        self.metrics_from_measures[semantic_model_name].append(metric_unique_id)
+
+    def fix_metrics_from_measures(self):
+        # Loop through yaml dictionary looking for matching generated metrics
+        generated_metrics = self.generated_metrics
+        self.generated_metrics = []
+        for metric_unique_id in generated_metrics:
+            parts = metric_unique_id.split(".")
+            metric_name = parts[-1]
+            if "semantic_models" in self.dict_from_yaml:
+                for sem_model in self.dict_from_yaml["semantic_model"]:
+                    if "measures" in sem_model:
+                        for measure in sem_model["measures"]:
+                            if measure["name"] == metric_name:
+                                self.add_metrics_from_measures(sem_model["name"], metric_unique_id)
+                                break
 
     def get_key_and_name_for_test(self, test_unique_id):
         yaml_key = None
