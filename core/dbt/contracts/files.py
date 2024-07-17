@@ -275,7 +275,7 @@ class SchemaSourceFile(BaseSourceFile):
             parts = metric_unique_id.split(".")
             metric_name = parts[-1]
             if "semantic_models" in self.dict_from_yaml:
-                for sem_model in self.dict_from_yaml["semantic_model"]:
+                for sem_model in self.dict_from_yaml["semantic_models"]:
                     if "measures" in sem_model:
                         for measure in sem_model["measures"]:
                             if measure["name"] == metric_name:
